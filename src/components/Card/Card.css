@@ -6,16 +6,6 @@
     box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
 }
 
-.card__image {
-    width: 60px;
-    height: 91px;
-    position: absolute;
-    top: 6px;
-    left: 10px;
-    object-fit: cover;
-    object-position: center;
-}
-
 .card__info {
     margin-left: 73px;
 }
@@ -80,12 +70,6 @@
         grid-template-columns: 183px 1fr;
         gap: 20px;
         padding: 0 20px 0 0;
-    }
-
-    .card__image {
-        position: static;
-        width: 100%;
-        height: 100%;
     }
 
     .card__info {

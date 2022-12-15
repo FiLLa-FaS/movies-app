@@ -1,14 +1,15 @@
 import { parseISO, format } from 'date-fns'
 
 import cutString from '../../helpers/cutString'
+import Image from '../Image'
 import './Card.css'
 
 function Card({ movie }) {
   const { title, release_date: releaseDate, overview, poster_path: posterPath } = movie
-  const posterUrl = 'https://image.tmdb.org/t/p/original'
+
   return (
     <div className="card">
-      <img className="card__image" src={`${posterUrl}${posterPath}`} alt="постер фильма" />
+      <Image path={posterPath} />
       <div className="card__column">
         <div className="card__info">
           <h2 className="card__title">{cutString(title, 45)}</h2>
