@@ -11,11 +11,11 @@ export default class ApiService {
     return body
   }
 
-  async getSearchMovies() {
+  async getSearchMovies(query, page = 1) {
     const res = await ApiService.getResource(
       this.apiBase,
-      '/search/movie?api_key=b76930803193cf07dedaa55dd5793257&language=en-US&query=return&page=1&include_adult=false'
+      `/search/movie?api_key=b76930803193cf07dedaa55dd5793257&language=en-US&query=${query}&page=${page}&include_adult=false`
     )
-    return res.results
+    return res
   }
 }

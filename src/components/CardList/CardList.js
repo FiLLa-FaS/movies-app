@@ -4,7 +4,7 @@ import './CardList.css'
 
 function CardList({ movies }) {
   return (
-    <ul className="cards">
+    <ul className="app__list cards">
       {movies.map((movie) => (
         <li key={movie.id}>
           <Card movie={movie} />

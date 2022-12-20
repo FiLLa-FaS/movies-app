@@ -1,6 +1,36 @@
-.app__offline-container {
+.app {
     display: flex;
     justify-content: center;
+    padding-bottom: 50px;
+}
+
+.app__offline-container {
     align-items: center;
     margin-top: 100px;
+}
+
+.app__online-container {
+    max-width: 1010px;
+    padding: 0 16px;
+    box-sizing: border-box;
+    margin-top: 30px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.app__list {
+    margin-top: 34px;
+}
+
+.app__pagination {
+    margin: 30px auto 0;
+}
+
+.app__error {
+    margin-top: 30px;
+}
+
+.app__spinner {
+    margin-top: 30px;
 }
