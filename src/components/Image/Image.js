@@ -1,8 +1,9 @@
 import React, { Component } from 'react'
 
 import Spinner from '../Spinner'
-import Error from '../Error'
+
 import './Image.css'
+import posterExample from './poster-example.png'
 
 export default class Image extends Component {
   static posterUrl = 'https://image.tmdb.org/t/p/original'
@@ -38,7 +39,7 @@ export default class Image extends Component {
           style={isLoading || hasError ? { display: 'none' } : { display: 'block' }}
         />
         {isLoading && <Spinner />}
-        {hasError && <Error text="Failed to download image" />}
+        {hasError && <img className="card__image" src={posterExample} alt="постер фильма" />}
       </>
     )
   }
