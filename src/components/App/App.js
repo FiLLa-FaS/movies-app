@@ -4,10 +4,12 @@ import _debounce from 'lodash/debounce'
 
 import CustomInput from '../CustomInput'
 import CustomPagination from '../CustomPagination'
+import CustomTabs from '../CustomTabs'
 import Spinner from '../Spinner'
 import Error from '../Error'
 import CardList from '../CardList'
 import ApiService from '../../services/apiService'
+import { GenresProvider } from '../../genres-context'
 
 import './App.css'
 
@@ -16,7 +18,9 @@ class App extends Component {
 
   debounceLabelChange = _debounce(() => {
     const { queryString } = this.state
-    this.setState({ isLoading: true })
+    if (queryString !== '') {
+      this.setState({ isLoading: true })
+    }
     this.getMovies(queryString)
   }, 1000)
 
@@ -27,25 +31,41 @@ class App extends Component {
       isLoading: false,
       hasError: false,
       queryString: null,
-      currPage: 1,
-      pages: null,
+      searchMovieCurrPage: 1,
+      searchMoviePages: null,
+      ratedMovies: [],
+      ratedMovieCurrPage: 1,
+      ratedMoviePages: null,
+      tab: 'search',
+      guestSessionId: null,
+      genres: [],
     }
   }
 
   componentDidMount() {
-    const { queryString } = this.state
-    if (!queryString) {
-      return
-    }
-    this.getMovies(queryString, 1)
+    this.apiService
+      .createGuestSession()
+      .then((results) => {
+        this.setState({
+          guestSessionId: results.guest_session_id,
+        })
+      })
+      .then(this.getAllGenres())
+      .catch(this.onError)
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const { queryString, currPage } = this.state
-    if (prevState.currPage === currPage) {
+    const { queryString, searchMovieCurrPage, ratedMovieCurrPage, tab } = this.state
+    if (prevState.searchMovieCurrPage === searchMovieCurrPage && prevState.ratedMovieCurrPage === ratedMovieCurrPage) {
       return
     }
-    this.getMovies(queryString, currPage)
+    if (prevState.tab === tab) {
+      if (prevState.searchMovieCurrPage !== searchMovieCurrPage) {
+        this.getMovies(queryString, searchMovieCurrPage)
+      } else if (prevState.ratedMovieCurrPage !== ratedMovieCurrPage) {
+        this.getMoviesWithRating(ratedMovieCurrPage)
+      }
+    }
   }
 
   getMovies = (query, page) => {
@@ -58,9 +78,32 @@ class App extends Component {
         this.setState({
           movies: results.results,
           isLoading: false,
-          currPage: results.page,
-          pages: results.total_pages,
+          searchMovieCurrPage: results.page,
+          searchMoviePages: results.total_pages,
         })
+      })
+      .catch(this.onError)
+  }
+
+  getMoviesWithRating = (page) => {
+    const { guestSessionId } = this.state
+    this.apiService
+      .getRatedMovies(guestSessionId, page)
+      .then((results) => {
+        this.setState({
+          ratedMovies: results.results,
+          ratedMovieCurrPage: results.page,
+          ratedMoviePages: results.total_pages,
+        })
+      })
+      .catch(this.onError)
+  }
+
+  getAllGenres = () => {
+    this.apiService
+      .getGenres()
+      .then((results) => {
+        this.setState({ genres: results.genres })
       })
       .catch(this.onError)
   }
@@ -76,16 +119,51 @@ class App extends Component {
   }
 
   onPaginationChange = (page) => {
-    this.setState({ currPage: page })
+    const { tab } = this.state
+    if (tab === 'search') {
+      this.setState({ searchMovieCurrPage: page })
+    } else {
+      this.setState({ ratedMovieCurrPage: page })
+    }
+  }
+
+  onTabChange = (key) => {
+    this.setState({ tab: key })
+    if (key === 'rated') {
+      this.getMoviesWithRating()
+    }
+  }
+
+  setMovieRating = (movieId, e) => {
+    const { guestSessionId } = this.state
+    this.apiService
+      .rateMovie(movieId, guestSessionId, e)
+      .then(() => this.getMoviesWithRating())
+      .catch(this.onError)
+    return null
   }
 
   renderCards = () => {
-    const { movies, isLoading, hasError, currPage, pages } = this.state
-    if (!(isLoading || hasError || movies.length === 0)) {
+    const {
+      movies,
+      isLoading,
+      hasError,
+      searchMovieCurrPage,
+      searchMoviePages,
+      ratedMovies,
+      ratedMovieCurrPage,
+      ratedMoviePages,
+      tab,
+    } = this.state
+    const currentMovies = tab === 'search' ? movies : ratedMovies
+    const currentCurrPage = tab === 'search' ? searchMovieCurrPage : ratedMovieCurrPage
+    const currentPages = tab === 'search' ? searchMoviePages : ratedMoviePages
+
+    if (!(isLoading || hasError || currentMovies.length === 0)) {
       return (
         <>
-          <CardList movies={movies} />
-          <CustomPagination currPage={currPage} onChange={this.onPaginationChange} pages={pages} />
+          <CardList ratedMovies={ratedMovies} movies={currentMovies} setMovieRating={this.setMovieRating} />
+          <CustomPagination currPage={currentCurrPage} onChange={this.onPaginationChange} pages={currentPages} />
         </>
       )
     }
@@ -93,30 +171,40 @@ class App extends Component {
   }
 
   renderErrorMessage = () => {
-    const { pages, movies, hasError, queryString } = this.state
+    const { searchMoviePages, movies, hasError, queryString } = this.state
 
     if (hasError) {
       return <Error text="Failed to download movies" />
     }
-    if (pages === 0 && movies.length === 0 && queryString !== null) {
+    if (searchMoviePages === 0 && movies.length === 0 && queryString !== null) {
       return <Error text="No movies found" />
     }
     return null
   }
 
-  render() {
-    const { isLoading, queryString } = this.state
-    const { onLabelChange, renderCards, renderErrorMessage } = this
+  renderContent = () => {
+    const { tab, isLoading, queryString } = this.state
     const spinner = isLoading ? <Spinner /> : null
+
+    return (
+      <>
+        <CustomTabs onTabChange={this.onTabChange} />
+        {tab === 'search' ? <CustomInput onLabelChange={this.onLabelChange} label={queryString} /> : null}
+        {this.renderErrorMessage()}
+        {spinner}
+        {this.renderCards()}
+      </>
+    )
+  }
+
+  render() {
+    const { genres } = this.state
     return (
       <div className="app">
         <Online>
-          <div className="app__online-container">
-            <CustomInput onLabelChange={onLabelChange} label={queryString} />
-            {renderErrorMessage()}
-            {spinner}
-            {renderCards()}
-          </div>
+          <GenresProvider value={genres}>
+            <div className="app__online-container">{this.renderContent()}</div>
+          </GenresProvider>
         </Online>
         <Offline>
           <div className="app__offline-container">
