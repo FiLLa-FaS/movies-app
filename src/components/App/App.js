@@ -39,6 +39,7 @@ class App extends Component {
       tab: 'search',
       guestSessionId: null,
       genres: [],
+      ratings: [],
     }
   }
 
@@ -61,8 +62,10 @@ class App extends Component {
     }
     if (prevState.tab === tab) {
       if (prevState.searchMovieCurrPage !== searchMovieCurrPage) {
+        this.setState({ isLoading: true })
         this.getMovies(queryString, searchMovieCurrPage)
       } else if (prevState.ratedMovieCurrPage !== ratedMovieCurrPage) {
+        this.setState({ isLoading: true })
         this.getMoviesWithRating(ratedMovieCurrPage)
       }
     }
@@ -92,6 +95,7 @@ class App extends Component {
       .then((results) => {
         this.setState({
           ratedMovies: results.results,
+          isLoading: false,
           ratedMovieCurrPage: results.page,
           ratedMoviePages: results.total_pages,
         })
@@ -129,16 +133,29 @@ class App extends Component {
 
   onTabChange = (key) => {
     this.setState({ tab: key })
-    if (key === 'rated') {
-      this.getMoviesWithRating()
-    }
   }
 
   setMovieRating = (movieId, e) => {
-    const { guestSessionId } = this.state
+    const { guestSessionId, ratedMovieCurrPage } = this.state
+    this.setState(({ ratings }) => {
+      const existedIndex = ratings.findIndex((el) => el.id === movieId)
+      if (existedIndex !== -1) {
+        const oldItem = ratings[existedIndex]
+        const newItem = e
+        const currentItem = { ...oldItem, rating: newItem }
+        return {
+          ratings: [...ratings.slice(0, existedIndex), currentItem, ...ratings.slice(existedIndex + 1)],
+        }
+      }
+      const newItem = { id: movieId, rating: e }
+      const newArray = [...ratings, newItem]
+      return {
+        ratings: newArray,
+      }
+    })
     this.apiService
       .rateMovie(movieId, guestSessionId, e)
-      .then(() => this.getMoviesWithRating())
+      .then(() => this.getMoviesWithRating(ratedMovieCurrPage))
       .catch(this.onError)
     return null
   }
@@ -153,6 +170,7 @@ class App extends Component {
       ratedMovies,
       ratedMovieCurrPage,
       ratedMoviePages,
+      ratings,
       tab,
     } = this.state
     const currentMovies = tab === 'search' ? movies : ratedMovies
@@ -162,7 +180,7 @@ class App extends Component {
     if (!(isLoading || hasError || currentMovies.length === 0)) {
       return (
         <>
-          <CardList ratedMovies={ratedMovies} movies={currentMovies} setMovieRating={this.setMovieRating} />
+          <CardList ratedMovies={ratings} movies={currentMovies} setMovieRating={this.setMovieRating} />
           <CustomPagination currPage={currentCurrPage} onChange={this.onPaginationChange} pages={currentPages} />
         </>
       )

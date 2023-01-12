@@ -5,7 +5,7 @@ import './CardList.css'
 
 function CardList({ ratedMovies, movies, setMovieRating }) {
   const getRating = (id) => {
-    const filteredMovie = ratedMovies.filter((task) => task.id === id)
+    const filteredMovie = ratedMovies.filter((movie) => movie.id === id)
     if (filteredMovie.length === 0) return null
     return filteredMovie[0].rating
   }
@@ -30,12 +30,7 @@ CardList.propTypes = {
   ratedMovies: PropTypes.arrayOf(
     PropTypes.shape({
       id: PropTypes.number,
-      title: PropTypes.string.isRequired,
-      release_date: PropTypes.string,
-      overview: PropTypes.string,
-      poster_path: PropTypes.string,
-      genre_ids: PropTypes.arrayOf(PropTypes.number),
-      voteAverage: PropTypes.number,
+      rating: PropTypes.number,
     })
   ),
   movies: PropTypes.arrayOf(
